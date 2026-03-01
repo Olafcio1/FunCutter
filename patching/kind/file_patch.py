@@ -8,25 +8,31 @@ def parsePatch(patch: str, ext: str) -> Patch:
     section = []
     sections = []
 
-    inSection = False
+    inSection = 0
 
     for line in lines:
         if line == "{":
             if inSection:
                 raise Exception("Tried to open a section in section scope")
 
-            inSection = True
-        elif line == "}":
+            inSection = 1
+        elif line == "[":
+            if inSection:
+                raise Exception("Tried to open a section in section scope")
+
+            inSection = 2
+        elif line == ("}" if inSection == 1 else "]"):
             if not inSection:
                 raise Exception("Tried to close a section in global scope")
             elif len(section) < 2:
                 raise Exception("A section can have at minimum 2 lines")
 
-            inSection = False
+            inSection = 0
 
             sections.append(Section(
                 search  = section[0],
-                replace = "\n".join(section[1:])
+                replace = "\n".join(section[1:]),
+                max = 1 if inSection == 1 else -1
             ))
 
             section.clear()
@@ -41,7 +47,8 @@ def parsePatch(patch: str, ext: str) -> Patch:
 
             sections.append(Section(
                 search  = "import ",
-                replace = "import %s;\nimport " % line[7:].removesuffix(";")
+                replace = "import %s;\nimport " % line[7:].removesuffix(";"),
+                max = 1
             ))
         else:
             if line.strip() == "":
@@ -66,7 +73,7 @@ def writePatch(patchPath: str, physicalPath: str) -> None:
         f.seek(0)
 
         for section in patch:
-            physical = physical.replace(section['search'], section['replace'], 1)
+            physical = physical.replace(section['search'], section['replace'], section['max'])
 
         encoded = physical.encode(encoding)
 
