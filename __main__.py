@@ -66,6 +66,17 @@ def buildAll() -> None:
     ### MAKE EACH VERSION ###
     ###===================###
     files = []
+    command = [".\\gradlew.bat"]
+
+    if len(sys.argv) > 1:
+      args = sys.argv[1:]
+
+      if not args[0].startswith("-"):
+        command.append(args.pop(0))
+      else: command.append('build')
+
+      command.extend(args)
+    else: command.append("build")
 
     for version in funcutter:
         print("[Funcutter] > Version " + version['name'])
@@ -78,7 +89,7 @@ def buildAll() -> None:
         writeProperties(vproperties)
         writePatches(version['name'], files)
 
-        subprocess.run([".\\gradlew.bat", "build", *sys.argv[1:]])
+        subprocess.run(command)
         subprocess.run(["git", "reset", "--hard"])
 
         for path in files:
