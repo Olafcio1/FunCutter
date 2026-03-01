@@ -41,4 +41,4 @@ def writePatches(versionName: str, mess: list[str], *, sub: str = "") -> None:
                 with open(physN, "wb") as dest:
                     dest.write(src.read())
 
-            mess.append(pathN)
+            mess.append(physN)
