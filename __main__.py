@@ -77,7 +77,7 @@ def buildAll() -> None:
     ### MAKE EACH VERSION ###
     ###===================###
     pendingReset = False
-    files = []
+    recovery = []
 
     try:
       command = [".\\gradlew.bat"]
@@ -111,30 +111,31 @@ def buildAll() -> None:
       for version in funcutter:
           print("[Funcutter] > Version " + version['name'])
 
-          files.clear()
+          recovery.clear()
           pendingReset = True
 
           vproperties = {**properties, **version['properties']}
           vproperties['archives_base_name'] = jarName + "+" + version['name']
 
           writeProperties(vproperties)
-          writePatches(version['name'], files)
+          writePatches(version['name'], recovery)
 
           runner()
+
+          for func in recovery:
+            func()
+
           subprocess.run(["git", "reset", "--hard"])
           pendingReset = False
-
-          for path in files:
-              os.unlink(path)
     except KeyboardInterrupt:
         print("[Funcutter] > Detected keyboard interrupt, cancelling")
         signal.signal(signal.SIGINT, lambda *_: None)
 
         if pendingReset:
-          subprocess.run(["git", "reset", "--hard"])
+          for func in recovery:
+            func()
 
-        for path in files:
-          os.unlink(path)
+          subprocess.run(["git", "reset", "--hard"])
 
     ###===================###
     ### RESTORE OLD STATE ###

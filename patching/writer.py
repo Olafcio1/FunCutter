@@ -1,11 +1,12 @@
 import os
+import subprocess
 
 from .kind.file_patch import writePatch
 from .kind.script_patch import scriptPatch
 
 __all__ = ("writePatches",)
 
-def writePatches(versionName: str, mess: list[str], *, sub: str = "") -> None:
+def writePatches(versionName: str, recovery: list, *, sub: str = "") -> None:
     try:
         path = "versions/" + versionName + sub
         files = os.listdir(path)
@@ -27,7 +28,7 @@ def writePatches(versionName: str, mess: list[str], *, sub: str = "") -> None:
         if os.path.isdir(pathN) != os.path.isdir(physN):
             raise Exception("Incorrect filetype")
         elif os.path.isdir(pathN):
-            writePatches(versionName, mess, sub=subN)
+            writePatches(versionName, recovery, sub=subN)
         elif (dotSplit := fn.rpartition("."))[2].startswith("fp-"):
             print("[Funcutter] [Patches] > Applying " + pathN)
             writePatch(pathN, physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:])
@@ -36,7 +37,11 @@ def writePatches(versionName: str, mess: list[str], *, sub: str = "") -> None:
             scriptPatch(pathN, physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:])
         elif (dotSplit := fn.rpartition("."))[2].startswith("fd-"):
             print("[Funcutter] [Patches] > Deleting " + pathN)
-            os.unlink(physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:])
+
+            realP = physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:]
+
+            os.unlink(realP)
+            recovery.append(runner(["git", "restore", realP]))
         else:
             print("[Funcutter] [Patches] > Creating " + pathN)
 
@@ -44,4 +49,10 @@ def writePatches(versionName: str, mess: list[str], *, sub: str = "") -> None:
                 with open(physN, "wb") as dest:
                     dest.write(src.read())
 
-            mess.append(physN)
+            recovery.append(deleter(physN))
+
+def runner(args: list[str]):
+    return lambda: subprocess.run(args)
+
+def deleter(path: str):
+    return lambda: os.unlink(path)
