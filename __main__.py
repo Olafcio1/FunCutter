@@ -108,7 +108,7 @@ while True:
         buildAll()
         break
     elif os.getcwd().count("/") <= 1:
-        print("[Funcutter] [Error] No 'build.funcutter' file could be found in your directory nor its ancestors")
+        print("[Funcutter] [Main/ERROR] No 'build.funcutter' file could be found in your directory nor its ancestors")
         sys.exit(1)
     else:
         os.chdir("..")

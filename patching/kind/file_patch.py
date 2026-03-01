@@ -36,9 +36,12 @@ def parsePatch(patch: str, ext: str) -> Patch:
             elif inSection:
                 raise Exception("Import statements are not allowed in sections")
 
+            if line.endswith(";"):
+                print("[FunCutter] [Patches/WARN] Imports don't have to end with a ';'")
+
             sections.append(Section(
                 search  = "import ",
-                replace = "import %s;\nimport" % line[7:]
+                replace = "import %s;\nimport" % line[7:].removesuffix(";")
             ))
         else:
             if line.strip() == "":
