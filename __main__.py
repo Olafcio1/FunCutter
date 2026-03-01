@@ -1,4 +1,5 @@
 import subprocess
+import signal
 import msvcrt
 import sys
 import os
@@ -59,53 +60,76 @@ def buildAll() -> None:
     ### STASH ###
     ###=======###
     print("[Funcutter] > Storing")
+    only_errors = {
+      "stdout": subprocess.PIPE,
+      "stderr": subprocess.STDOUT
+    }
 
-    subprocess.run(["git", "add", "."])
-    subprocess.run(["git", "commit", "-m", "funcutter -- temporary", "--allow-empty"])
+    subprocess.run(["git", "add", "."], **only_errors)
+    subprocess.run(["git", "commit", "-m", "funcutter -- temporary", "--allow-empty"], **only_errors)
 
     ###===================###
     ### MAKE EACH VERSION ###
     ###===================###
+    pendingReset = False
     files = []
-    command = [".\\gradlew.bat"]
 
-    for _ in range(1):
-      if len(sys.argv) > 1:
-        if sys.argv[1] == "!wait":
-          def runner():
-            print("[Funcutter] Waiting. To continue, press any key.")
-            msvcrt.getch()
+    try:
+      command = [".\\gradlew.bat"]
 
-          break
+      for _ in range(1):
+        if len(sys.argv) > 1:
+          if sys.argv[1] == "!wait":
+            def runner():
+              print(old := "[Funcutter] Waiting. To continue, press any key.", end="")
+              sys.stdout.flush()
+              if msvcrt.getch() == b'\x03':
+                print()
+                raise KeyboardInterrupt()
+
+              print("\r[Funcutter] Continuing." + " "*(len(old) - 23))
+
+            break
+          else:
+            args = sys.argv[1:]
+
+            if not args[0].startswith("-"):
+              command.append(args.pop(0))
+            else: command.append('build')
+
+            command.extend(args)
         else:
-          args = sys.argv[1:]
+          command.append("build")
 
-          if not args[0].startswith("-"):
-            command.append(args.pop(0))
-          else: command.append('build')
+        runner = lambda: subprocess.run(command)
 
-          command.extend(args)
-      else:
-        command.append("build")
+      for version in funcutter:
+          print("[Funcutter] > Version " + version['name'])
 
-      runner = lambda: subprocess.run(command)
+          files.clear()
+          pendingReset = True
 
-    for version in funcutter:
-        print("[Funcutter] > Version " + version['name'])
+          vproperties = {**properties, **version['properties']}
+          vproperties['archives_base_name'] = jarName + "+" + version['name']
 
-        files.clear()
+          writeProperties(vproperties)
+          writePatches(version['name'], files)
 
-        vproperties = {**properties, **version['properties']}
-        vproperties['archives_base_name'] = jarName + "+" + version['name']
+          runner()
+          subprocess.run(["git", "reset", "--hard"])
+          pendingReset = False
 
-        writeProperties(vproperties)
-        writePatches(version['name'], files)
+          for path in files:
+              os.unlink(path)
+    except KeyboardInterrupt:
+        print("[Funcutter] > Detected keyboard interrupt, cancelling")
+        signal.signal(signal.SIGINT, lambda *_: None)
 
-        runner()
-        subprocess.run(["git", "reset", "--hard"])
+        if pendingReset:
+          subprocess.run(["git", "reset", "--hard"])
 
         for path in files:
-            os.unlink(path)
+          os.unlink(path)
 
     ###===================###
     ### RESTORE OLD STATE ###
