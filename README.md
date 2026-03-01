@@ -3,32 +3,37 @@ An ugly super-fast multi-version project file patcher.<br/>
 Alternative to Stonecutter. Almost no setup.
 
 ## 🔼 Setup
-1. Create a file called `build.funcutter` in your project root directory.<br/>
-   Its contents may be for example this:
-
-    ```text
-    # 1.20.1
-    minecraft_version=1.20.1
-    yarn_mappings=1.20.1+build.10
-    loader_version=0.16.3
-    fabric_version=0.92.2+1.20.1
-    ```
-
-    If you're not sure what to put there, just copy this segment from the `gradle.properties` file.
-
-    No magic here:<br/>
-    If your project previously depended on manual code changes for each version you want to build, you can almost copy-paste into it.
-
-2. Create a directory called `versions` in your project root directory.<br/>
-   You can create subdirectories named after versions there, which contain the patch files (and even more directories).
-
-3. Install FunCutter<br/>
+1. Install FunCutter<br/>
    1. Download the source code
    2. Install Python 3.11 <u>with an EXE installer</u>
       - with the **Add to PATH** option selected
       - with the **Use admin privileges** option **un**selected
    3. In FunCutter's source code, double-click the `install.py` script
-   4. In the project root, run `funcutter`
+
+2. Run `funcutter init` in your project root
+
+3. Create a directory called `versions` in your project root directory.<br/>
+   You can create subdirectories named after versions there, which contain the patch files (and even more directories).
+
+## 🪴 Usage
+- To build your project for all specified versions, you can just run `funcutter`.<br/>
+  You can specify the options and the task name if you need them - e.g.:
+
+  |           Command           |      Later in Gradle      |
+  |-----------------------------|---------------------------|
+  | `funcutter build`           | `gradlew build`           |
+  | `funcutter --offline`       | `gradlew build --offline` |
+  | `funcutter build --offline` | `gradlew build --offline` |
+
+- To check out your project for each of the specified versions, you can use `funcutter !wait`.<br/>
+  For each of the versions, it:
+  1. does the patches,
+  2. lets you see the code,
+  3. undoes the patches,
+  4. proceeds to the next version.
+
+  If you want to change a thing during the process, you can amend commit it.<br/>
+  It will add the change to the funcutter temporary commit, which will stay for the next versions during the process, and end up in your unstaged working root after all versions are processed.
 
 ## 🕍 Syntax
 FunCutter supports multiple types of files:
