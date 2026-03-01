@@ -1,14 +1,20 @@
 import json
+import yaml
 
 __all__ = ("scriptPatch",)
 SCRIPTABLES = {
-    "json": (json.loads, lambda text: json.dumps(text, indent=2))
+    "txt": (lambda text: text, lambda text: text),
+    "json": (json.loads,     lambda obj: json.dumps    (obj, indent=2)),
+    "yaml": (yaml.full_load, lambda obj: yaml.safe_dump(obj, indent=2))
 }
 
 def scriptPatch(patchPath: str, physicalPath: str) -> None:
     global SCRIPTABLES
-    if (ext := physicalPath.rpartition(".")[2]) not in SCRIPTABLES:
-        raise Exception("Expected a scriptable extension (.%s is not supported)" % ext)
+
+    ext = physicalPath.rpartition(".")[2]
+    if ext not in SCRIPTABLES:
+        ext = "txt"
+        print("[FunCutter] [Patches] > Unrecognized extension '.%s', falling back to .txt" % ext)
 
     with open(patchPath, "r", encoding="utf-8") as f:
         userscript = f.read()
