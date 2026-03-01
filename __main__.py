@@ -34,7 +34,7 @@ def writeProperties(properties: Properties) -> None:
     with open("./gradle.properties", "w", encoding="utf-8") as f:
         for key in properties:
             if key[0] == "\x00":
-                f.write(properties[key])
+                f.write(properties[key] + "\n")
                 continue
 
             f.write(key + "=" + properties[key] + "\n")

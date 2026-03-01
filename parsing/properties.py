@@ -11,5 +11,6 @@ def parseProperties(data: str) -> Properties:
             out[key] = value
         else:
             out["\x00" + str(index)] = line
+            index += 1
 
     return out
