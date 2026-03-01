@@ -1,4 +1,5 @@
 import subprocess
+import msvcrt
 import sys
 import os
 
@@ -68,15 +69,26 @@ def buildAll() -> None:
     files = []
     command = [".\\gradlew.bat"]
 
-    if len(sys.argv) > 1:
-      args = sys.argv[1:]
+    for _ in range(1):
+      if len(sys.argv) > 1:
+        if sys.argv[1] == "!wait":
+          def runner():
+            print("[Funcutter] Waiting. To continue, press any key.")
+            msvcrt.getch()
 
-      if not args[0].startswith("-"):
-        command.append(args.pop(0))
-      else: command.append('build')
+          break
+        else:
+          args = sys.argv[1:]
 
-      command.extend(args)
-    else: command.append("build")
+          if not args[0].startswith("-"):
+            command.append(args.pop(0))
+          else: command.append('build')
+
+          command.extend(args)
+      else:
+        command.append("build")
+
+      runner = lambda: subprocess.run(command)
 
     for version in funcutter:
         print("[Funcutter] > Version " + version['name'])
@@ -89,7 +101,7 @@ def buildAll() -> None:
         writeProperties(vproperties)
         writePatches(version['name'], files)
 
-        subprocess.run(command)
+        runner()
         subprocess.run(["git", "reset", "--hard"])
 
         for path in files:
