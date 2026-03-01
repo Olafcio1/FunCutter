@@ -57,4 +57,9 @@ this['client'].append("ClientConnectionMixin")
   This format is entirely based on Python - as it uses it.<br/>
   This can be useful when e.g. adding a mixin.
 
+
+- **File Delete (.fd-\*)**<br/>
+  These files are empty, and indicate the removal of a file.<br/>
+  For example, creating a file called `ModernMixin.fd-java` indicates the removal of the file `ModernMixin.java`.
+
 There might be more filetypes available in the future.

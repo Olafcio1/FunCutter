@@ -34,6 +34,9 @@ def writePatches(versionName: str, mess: list[str], *, sub: str = "") -> None:
         elif (dotSplit := fn.rpartition("."))[2].startswith("fs-"):
             print("[Funcutter] [Patches] > Running " + pathN)
             scriptPatch(pathN, physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:])
+        elif (dotSplit := fn.rpartition("."))[2].startswith("fd-"):
+            print("[Funcutter] [Patches] > Deleting " + pathN)
+            os.unlink(physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:])
         else:
             print("[Funcutter] [Patches] > Creating " + pathN)
 
