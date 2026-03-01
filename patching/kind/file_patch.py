@@ -41,7 +41,7 @@ def parsePatch(patch: str, ext: str) -> Patch:
 
             sections.append(Section(
                 search  = "import ",
-                replace = "import %s;\nimport" % line[7:].removesuffix(";")
+                replace = "import %s;\nimport " % line[7:].removesuffix(";")
             ))
         else:
             if line.strip() == "":
