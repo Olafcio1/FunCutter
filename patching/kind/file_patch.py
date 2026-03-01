@@ -2,7 +2,7 @@ from ..types import *
 
 __all__ = ("parsePatch", "writePatch",)
 
-def parsePatch(patch: str) -> Patch:
+def parsePatch(patch: str, ext: str) -> Patch:
     lines = patch.splitlines()
 
     section = []
@@ -25,11 +25,21 @@ def parsePatch(patch: str) -> Patch:
             inSection = False
 
             sections.append(Section(
-                search    = section[0],
+                search  = section[0],
                 replace = "\n".join(section[1:])
             ))
 
             section.clear()
+        elif line.startswith("import "):
+            if ext != ".java":
+                raise Exception("Import statements are only allowed in .fp-java files")
+            elif inSection:
+                raise Exception("Import statements are not allowed in sections")
+
+            sections.append(Section(
+                search  = "import ",
+                replace = "import %s;\nimport" % line[7:]
+            ))
         else:
             if line.strip() == "":
                 continue
@@ -44,7 +54,7 @@ def writePatch(patchPath: str, physicalPath: str) -> None:
     with open(patchPath, "r", encoding="utf-8") as f:
         patchRaw = f.read()
 
-    patch = parsePatch(patchRaw)
+    patch = parsePatch(patchRaw, "." + physicalPath.rpartition(".")[2])
 
     with open(physicalPath, "rb+") as f:
         encoding = "utf-8"
