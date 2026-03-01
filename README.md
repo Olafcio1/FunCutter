@@ -6,13 +6,13 @@ Alternative to Stonecutter. Almost no setup.
 1. Create a file called `build.funcutter` in your project root directory.<br/>
    Its contents may be for example this:
 
-   ```text
-# 1.20.1
-minecraft_version=1.20.1
-yarn_mappings=1.20.1+build.10
-loader_version=0.16.3
-fabric_version=0.92.2+1.20.1
-```
+    ```text
+    # 1.20.1
+    minecraft_version=1.20.1
+    yarn_mappings=1.20.1+build.10
+    loader_version=0.16.3
+    fabric_version=0.92.2+1.20.1
+    ```
 
     If you're not sure what to put there, just copy this segment from the `gradle.properties` file.
 
@@ -35,12 +35,12 @@ FunCutter supports multiple types of files:
 - **File Patch (.fp-\*)**<br/>
   An example `.fp-java` file may look like this:
 
-  ```java
+```java
 {
     State.legacy = false;  // This is the searched text
     State.legacy = true;   // This is the replacement
 }
-  ```
+```
 
   The first search result is replaced with the replacement.<br/>
   The search can have only one line, however the replacement can have multiple lines.
@@ -48,11 +48,11 @@ FunCutter supports multiple types of files:
 - **File Script (.fs-\*)**<br/>
   An example `.fs-json` file may look like this:
 
-  ```python
+```python
 # Appends the 'ClientConnectionMixin' string
 # to the 'client' array
 this['client'].append("ClientConnectionMixin")
-  ```
+```
 
   This format is entirely based on Python - as it uses it.<br/>
   This can be useful when e.g. adding a mixin.
