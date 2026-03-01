@@ -50,6 +50,8 @@ def parseFuncutter(data: str) -> Versions:
              versionProperties, \
              versions
 
+    assert versionName != None
+
     versions.append(Version(
       name       = versionName,
       properties = versionProperties
@@ -87,7 +89,7 @@ def readFuncutter() -> Versions:
 
   return parseFuncutter(funcutter)
 
-def readProperties() -> Properties:
+def readProperties() -> tuple[Properties, str]:
   with open("./gradle.properties", "r", encoding="utf-8") as f:
     properties = f.read()
 
