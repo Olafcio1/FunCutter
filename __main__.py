@@ -118,6 +118,10 @@ def buildAll() -> None:
           vproperties['archives_base_name'] = jarName + "+" + version['name']
 
           writeProperties(vproperties)
+
+          for extension in version['extensions']:
+              writePatches(extension, recovery)
+
           writePatches(version['name'], recovery)
 
           runner()
