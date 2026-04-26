@@ -1,3 +1,5 @@
+import requests
+
 class LegacyFabric:
   @staticmethod
   def properties(minecraft_version: str) -> str:
