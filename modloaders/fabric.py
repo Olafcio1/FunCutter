@@ -31,7 +31,7 @@ class Fabric:
       if obj.gameVersion == minecraft_version:
         return obj['version']
 
-    raise Exception("No Fabric yarn available")
+    raise Exception("No Fabric yarn available (MC: %s)" % minecraft_version)
 
   @staticmethod
   def getAPI(minecraft_version: str) -> str:
@@ -48,4 +48,4 @@ class Fabric:
       )):
         return version
 
-    raise Exception("No Fabric API available")
+    raise Exception("No Fabric API available (MC: %s)" % minecraft_version)

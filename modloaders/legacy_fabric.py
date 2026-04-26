@@ -30,4 +30,4 @@ class LegacyFabric:
       if minecraft_version in obj['game_versions']:
         return obj['version_number'] + "+" + minecraft_version
 
-    raise Exception("No Legacy Fabric API available")
+    raise Exception("No Legacy Fabric API available (MC: %s)" % minecraft_version)
