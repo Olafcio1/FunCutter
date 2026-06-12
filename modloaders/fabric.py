@@ -20,7 +20,7 @@ class Fabric:
   @staticmethod
   def getLoader() -> str:
     if Fabric.fabric_loader == None:
-      Fabric.fabric_loader = requests.get("https://meta.fabricmc.net/v2/versions/loader").json()[0].version
+      Fabric.fabric_loader = requests.get("https://meta.fabricmc.net/v2/versions/loader").json()[0]['version']
 
     return Fabric.fabric_loader
 
@@ -28,7 +28,7 @@ class Fabric:
   def getYarn(minecraft_version: str) -> str:
     data = requests.get("https://meta.fabricmc.net/v2/versions/yarn").json()
     for obj in data:
-      if obj.gameVersion == minecraft_version:
+      if obj['gameVersion'] == minecraft_version:
         return obj['version']
 
     raise Exception("No Fabric yarn available (MC: %s)" % minecraft_version)
