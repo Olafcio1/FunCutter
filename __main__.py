@@ -203,7 +203,35 @@ if len(sys.argv) > 1 and sys.argv[1] == "init":
 
   for mcver in mcvers:
     funcutter += "# %s\n" % mcver
-    funcutter += modloader.properties(mcver)
+
+    try:
+      funcutter += modloader.properties(mcver)
+    except Exception as e:
+      if 'Fabric yarn' in str(e):
+        print("[Missing Yarn] %s" % str(e))
+        print("[Missing Yarn] Continue (y/n)? ", end="", flush=True)
+
+        while True:
+          key = msvcrt.getch()
+
+          if key == b'\x03':
+            raise KeyboardInterrupt()
+          elif key == b'y':
+            print("y", end="", flush=True)
+            break
+          elif key == b'n':
+            print("n", flush=True)
+            sys.exit(1)
+
+        print()
+
+        realYarnFetcher = modloader.getYarn
+        modloader.getYarn = lambda *_: '<none>'
+        funcutter += modloader.properties(mcver)
+        modloader.getYarn = realYarnFetcher
+      else:
+        raise
+
     funcutter += "\n"
 
   with open("build.funcutter", "w", encoding="utf-8") as f:
