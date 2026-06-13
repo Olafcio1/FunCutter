@@ -6,7 +6,13 @@ from .kind.script_patch import scriptPatch
 
 __all__ = ("writePatches",)
 
-def writePatches(versionName: str, recovery: list, *, sub: str = "") -> None:
+def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLate: list|None = None) -> None:
+    if recoveryLate is None:
+        recoveryLate = []
+        newLate = True
+    else:
+        newLate = False
+
     try:
         path = "versions/" + versionName + sub
         files = os.listdir(path)
@@ -26,9 +32,15 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "") -> None:
         physN = physP + subN
 
         if os.path.isdir(pathN) != os.path.isdir(physN):
-            raise Exception("Incorrect filetype")
-        elif os.path.isdir(pathN):
-            writePatches(versionName, recovery, sub=subN)
+            if os.path.exists(physN):
+                raise Exception("Incorrect filetype")
+            else:
+                os.mkdir(physN)
+                print("[Funcutter] [Patches] > Creating directory " + pathN)
+                recoveryLate.append(lambda: os.rmdir(physN))
+
+        if os.path.isdir(pathN):
+            writePatches(versionName, recovery, sub=subN, recoveryLate=recoveryLate)
         elif (dotSplit := fn.rpartition("."))[2].startswith("fp-"):
             print("[Funcutter] [Patches] > Applying " + pathN)
             writePatch(pathN, physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:])
@@ -50,6 +62,9 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "") -> None:
                     dest.write(src.read())
 
             recovery.append(deleter(physN))
+
+    if newLate:
+        recovery.extend(recoveryLate)
 
 def runner(args: list[str]):
     return lambda: subprocess.run(args)
