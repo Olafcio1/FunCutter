@@ -55,6 +55,16 @@ def parseFuncutter(data: str) -> Versions:
 
             versionExtensions.append(name)
             versionProperties.update(dictversions[name]['properties'])
+        elif line.startswith(";"):
+            # Adds patches recursively and extends properties
+            if versionName == None:
+                raise Exception("Cannot put extension out of version scope")
+
+            name = line[1:].strip()
+
+            versionExtensions.extend(dictversions[name]['extensions'])
+            versionExtensions.append(name)
+            versionProperties.update(dictversions[name]['properties'])
         elif line.startswith("!"):
             # Only adds patches
             if versionName == None:
