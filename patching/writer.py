@@ -70,4 +70,4 @@ def runner(args: list[str]):
     return lambda: subprocess.run(args)
 
 def deleter(path: str):
-    return lambda: os.unlink(path)
+    return lambda: os.unlink(path) if os.path.exists(path) else None
