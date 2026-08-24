@@ -7,6 +7,7 @@ class Version(TypedDict):
     name: str
     properties: Properties
     extensions: list[str]
+    abstract: bool
 
 Versions = list[Version]
 
@@ -14,6 +15,7 @@ def parseFuncutter(data: str) -> Versions:
     versionName:       str|None   = None
     versionProperties: Properties = {}
     versionExtensions: list[str]  = []
+    versionAbstract:   bool       = False
 
     versions: Versions = []
     dictversions: dict[str, Version] =  {}
@@ -21,6 +23,7 @@ def parseFuncutter(data: str) -> Versions:
     def addVersion() -> None:
         nonlocal versionName, \
                  versionProperties, \
+                 versionAbstract, \
                  versions, dictversions
 
         assert versionName != None
@@ -28,7 +31,8 @@ def parseFuncutter(data: str) -> Versions:
         versions.append(ver := Version(
             name       = versionName,
             properties = versionProperties.copy(),
-            extensions = versionExtensions.copy()
+            extensions = versionExtensions.copy(),
+            abstract   = versionAbstract
         ))
 
         dictversions[versionName] = ver
@@ -36,6 +40,7 @@ def parseFuncutter(data: str) -> Versions:
         versionProperties.clear()
         versionExtensions.clear()
         versionName = None
+        versionAbstract = False
 
     lines = data.splitlines()
 
@@ -46,6 +51,13 @@ def parseFuncutter(data: str) -> Versions:
                 addVersion()
 
             versionName = line[1:].strip()
+        elif line.startswith("$"):
+            # Defines version base scope
+            if versionName != None:
+                addVersion()
+
+            versionName = line[1:].strip()
+            versionAbstract = True
         elif line.startswith(":"):
             # Adds patches and extends properties
             if versionName == None:

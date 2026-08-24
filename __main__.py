@@ -109,6 +109,9 @@ def buildAll() -> None:
         runner = lambda: subprocess.run(command)
 
       for version in funcutter:
+          if version['abstract']:
+              continue
+
           print("[Funcutter] > Version " + version['name'])
 
           recovery.clear()
