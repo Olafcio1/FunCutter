@@ -122,7 +122,10 @@ def parseFuncutter(data: str) -> list[IVersion]:
             addonExtensions.insert(0, addon)
 
             for ext in dictversions[addon]['extensions']:
-                if isinstance(ext, Callable) and ext.get() == '{@name}':
+                if isinstance(ext, Callable):
+                    if ext.get() == '{@name}':
+                        break
+                elif ext == '{@name}':
                     break
             else:
                 addonExtensions.insert(1, versionName)
