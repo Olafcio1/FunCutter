@@ -79,6 +79,7 @@ def make(func, *args):
         return func(*args, *_args, **_kwargs)
 
     wrapper.rebind = lambda consumer: make(func, *consumer(*args))
+    wrapper.get = lambda: args
 
     return wrapper
 
@@ -114,13 +115,19 @@ def parseFuncutter(data: str) -> list[IVersion]:
         for (addon, addonArgs) in versionAddons:
             addonName = addon + "-" + versionName
 
-            addonProperties = dictversions[addon]['properties'].copy()
-            addonExtensions = dictversions[addon]['extensions'].copy()
+            addonProperties = versionProperties.copy()
+            addonExtensions = versionExtensions.copy()
 
-            addonExtensions.extend(versionExtensions)
-            addonExtensions.insert(0, versionName)
-            addonExtensions.insert(1, addon)
-            addonProperties.extend(versionProperties)
+            addonExtensions.extend(dictversions[addon]['extensions'])
+            addonExtensions.insert(0, addon)
+
+            for ext in dictversions[addon]['extensions']:
+                if isinstance(ext, Callable) and ext.get() == '{@name}':
+                    break
+            else:
+                addonExtensions.insert(1, versionName)
+
+            addonProperties.extend(dictversions[addon]['properties'])
 
             provide(addonProperties, addonArgs)
             provide(addonExtensions, addonArgs)
