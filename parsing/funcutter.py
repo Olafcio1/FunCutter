@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Callable, Protocol
 from .properties import Properties
 
 __all__ = ("Version",  "Versions", "parseFuncutter",)
@@ -11,6 +11,20 @@ class Version(TypedDict):
 
 Versions = list[Version]
 
+InternalProperties = list[tuple[str, str] | Callable[[], "InternalProperties"]]
+InternalExtensions = list[str             | Callable[[], "InternalExtensions"]]
+
+class InternalVersion(TypedDict):
+    name: str
+    source_name: str
+    properties: InternalProperties
+    extensions: InternalExtensions
+    abstract: bool
+
+class IVersion(Protocol):
+    name: str
+    abstract: bool
+
 def process(obj, placeholders):
     if isinstance(obj, list):
         for i, v in enumerate(obj):
@@ -18,11 +32,15 @@ def process(obj, placeholders):
     elif isinstance(obj, dict):
         for k in obj:
             obj[k] = process(obj[k], placeholders)
+    elif isinstance(obj, tuple):
+        obj = tuple([process(v, placeholders) for v in obj])
     elif isinstance(obj, str):
         for k in placeholders:
             obj = obj.replace("{%s}" % k, placeholders[k])
     else:
-        raise Exception("Cannot process '%r'" % obj)
+        pass
+
+    return obj
 
 def provide(obj, placeholders, *, master: bool = True):
     if master and not placeholders:
@@ -34,27 +52,45 @@ def provide(obj, placeholders, *, master: bool = True):
     elif isinstance(obj, dict):
         for k in obj:
             obj[k] = provide(obj[k], placeholders, master=False)
+    elif isinstance(obj, tuple):
+        obj = tuple([provide(v, placeholders, master=False) for v in obj])
     elif isinstance(obj, str):
         while "{}" in obj:
             if not placeholders:
                 raise Exception("Not enough arguments")
 
             obj = obj.replace("{}", placeholders.pop(0), 1)
+    elif isinstance(obj, Callable):
+        obj = obj.rebind(lambda x: [provide(x, placeholders, master=False)])
     else:
-        raise Exception("Cannot process '%r'" % obj)
+        pass
 
     if placeholders and master:
         raise Exception("Too many arguments")
 
-def parseFuncutter(data: str) -> Versions:
-    versionName:       str|None   = None
-    versionProperties: Properties = {}
-    versionExtensions: list[str]  = []
-    versionAddons:     list[str]  = []
-    versionAbstract:   bool       = False
+    return obj
 
-    versions: Versions = []
-    dictversions: dict[str, Version] =  {}
+def makePlaceholders(versionName):
+    return {"@name": versionName}
+
+def make(func, *args):
+    def wrapper(*_args, **_kwargs):
+        nonlocal func, args
+        return func(*args, *_args, **_kwargs)
+
+    wrapper.rebind = lambda consumer: make(func, *consumer(*args))
+
+    return wrapper
+
+def parseFuncutter(data: str) -> list[IVersion]:
+    versionName:       str|None           = None
+    versionProperties: InternalProperties = []
+    versionExtensions: InternalExtensions = []
+    versionAddons:     list[str]          = []
+    versionAbstract:   bool               = False
+
+    versions:     list[     InternalVersion] = []
+    dictversions: dict[str, InternalVersion] = {}
 
     def addVersion() -> None:
         nonlocal versionName, \
@@ -65,13 +101,12 @@ def parseFuncutter(data: str) -> Versions:
 
         assert versionName != None
 
-        placeholders = {"@name": versionName}
-
-        versions.append(ver := Version(
-            name       = versionName,
-            properties = process(versionProperties.copy(), placeholders),
-            extensions = process(versionExtensions.copy(), placeholders),
-            abstract   = versionAbstract
+        versions.append(ver := InternalVersion(
+            name        = versionName,
+            source_name = versionName,
+            properties  = versionProperties.copy(),
+            extensions  = versionExtensions.copy(),
+            abstract    = versionAbstract
         ))
 
         dictversions[versionName] = ver
@@ -82,21 +117,20 @@ def parseFuncutter(data: str) -> Versions:
             addonProperties = dictversions[addon]['properties'].copy()
             addonExtensions = dictversions[addon]['extensions'].copy()
 
-            addonExtensions.extend(versionProperties)
+            addonExtensions.extend(versionExtensions)
             addonExtensions.insert(0, versionName)
-            addonProperties.update(versionProperties)
-
-            process(addonProperties, placeholders)
-            process(addonExtensions, placeholders)
+            addonExtensions.insert(1, addon)
+            addonProperties.extend(versionProperties)
 
             provide(addonProperties, addonArgs)
             provide(addonExtensions, addonArgs)
 
-            versions.append(ver := Version(
-                name       = addonName,
-                properties = addonProperties,
-                extensions = addonExtensions,
-                abstract   = versionAbstract
+            versions.append(ver := InternalVersion(
+                name        = addonName,
+                source_name = versionName,
+                properties  = addonProperties,
+                extensions  = addonExtensions,
+                abstract    = versionAbstract
             ))
 
             dictversions[addonName] = ver
@@ -131,7 +165,7 @@ def parseFuncutter(data: str) -> Versions:
             name = line[1:].strip()
 
             versionExtensions.append(name)
-            versionProperties.update(dictversions[name]['properties'])
+            versionProperties.append(make(lambda name: dictversions[name]['properties'], name))
         elif line.startswith(";"):
             # Adds patches recursively and extends properties
             if versionName == None:
@@ -139,9 +173,10 @@ def parseFuncutter(data: str) -> Versions:
 
             name = line[1:].strip()
 
-            versionExtensions.extend(dictversions[name]['extensions'])
+            versionExtensions.append(make(lambda name: dictversions[name]['extensions'], name))
             versionExtensions.append(name)
-            versionProperties.update(dictversions[name]['properties'])
+
+            versionProperties.append(make(lambda name: dictversions[name]['properties'], name))
         elif line.startswith("!"):
             # Only adds patches
             if versionName == None:
@@ -177,9 +212,27 @@ def parseFuncutter(data: str) -> Versions:
             raise Exception("Cannot put properties out of version scope")
         else:
             key, _, value = line.partition("=")
-            versionProperties[key] = value
+            versionProperties.append((key, value))
 
     if versionProperties:
         addVersion()
 
-    return versions
+    return [ver if ver['abstract'] \
+                else \
+                     \
+            Version(name       = ver['name'],                           \
+                    properties = dict(convert(ver['properties'], ver)), \
+                    extensions =      convert(ver['extensions'], ver),  \
+                    abstract   = ver['abstract']                        ) for ver in versions]
+
+def convert(obj, ver: InternalVersion):
+    out = []
+    placeholders = makePlaceholders(ver['source_name'])
+
+    for el in obj:
+        if isinstance(el, Callable):
+            out.extend(convert(el.rebind(lambda name: [process(name, placeholders)])(), ver))
+        else:
+            out.append(process(el, placeholders))
+
+    return out
