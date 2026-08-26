@@ -1,5 +1,6 @@
 import subprocess
 import signal
+import typing
 import msvcrt
 import sys
 import os
@@ -57,6 +58,90 @@ def buildAll() -> None:
     print("[Funcutter] > Configuring")
 
     funcutter = readFuncutter()
+
+    ###======###
+    ### DUMP ###
+    ###======###
+    if len(sys.argv) > 1 and sys.argv[1] == "!dump":
+        print()
+
+        for version in funcutter:
+            if version['abstract']:
+                sys.stderr.write("abstract ")
+
+            sys.stderr.write("version %s {" % version['name'])
+
+            inherits_started = False
+            inherits_count = 0
+
+            if version['extensions']:
+                inherits_started = True
+
+                sys.stderr.write("\n")
+                sys.stderr.write("    inherits {\n")
+
+                for obj in version['extensions']:
+                    if isinstance(obj, typing.Callable):
+                        sys.stderr.write("        patches from [dynamic] %s\n" % (obj.get()))
+                    else:
+                        sys.stderr.write("        patches from %s\n" % (obj))
+
+            if version['properties']:
+                for obj in version['properties']:
+                    if isinstance(obj, typing.Callable):
+                        if not inherits_started:
+                            inherits_started = True
+                            sys.stderr.write("    inherits {\n")
+
+                        sys.stderr.write("        properties from [dynamic] %s\n" % (obj.get()))
+                        inherits_count += 1
+
+                if inherits_started:
+                    sys.stderr.write("    }")
+
+                if len(version['properties']) > inherits_count:
+                    sys.stderr.write("\n")
+
+                    props_started = False
+
+                    for obj in version['properties']:
+                        if isinstance(obj, tuple):
+                            if not props_started:
+                                props_started = True
+
+                                if inherits_started:
+                                    sys.stderr.write("\n")
+
+                                sys.stderr.write("    properties {\n")
+
+                            sys.stderr.write("        %s = %s\n" % obj)
+                        elif isinstance(obj, str):
+                            if not props_started:
+                                props_started = True
+
+                                if inherits_started:
+                                    sys.stderr.write("\n")
+
+                                sys.stderr.write("    properties {\n")
+
+                            sys.stderr.write("        %s = %s\n" % (obj, version['properties'][obj]))
+
+                    if props_started:
+                        sys.stderr.write("    }")
+
+                sys.stderr.write("\n")
+            elif inherits_started:
+                sys.stderr.write("    }")
+                sys.stderr.write("\n")
+
+            sys.stderr.write("}")
+            sys.stderr.write("\n\n")
+
+        sys.exit(0)
+
+    ###=================###
+    ### READ PROPERTIES ###
+    ###=================###
     properties, propRaw = readProperties()
 
     jarName = properties['archives_base_name']
