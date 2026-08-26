@@ -85,6 +85,9 @@ def parseFuncutter(data: str) -> Versions:
             name = line[1:].strip()
 
             versionExtensions.append(name)
+        elif line.startswith("//"):
+            # Comment
+            pass
         elif versionName == None:
             raise Exception("Cannot put properties out of version scope")
         elif line.strip() != "":
