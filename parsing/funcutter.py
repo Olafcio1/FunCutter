@@ -11,6 +11,21 @@ class Version(TypedDict):
 
 Versions = list[Version]
 
+def process(obj, placeholders):
+    if isinstance(obj, list):
+        for i, v in enumerate(obj):
+            obj[i] = process(v, placeholders)
+    elif isinstance(obj, dict):
+        for k in obj:
+            obj[k] = process(obj[k], placeholders)
+    elif isinstance(obj, str):
+        for k in placeholders:
+            obj = obj.replace("{%s}" % k, placeholders[k])
+    else:
+        raise Exception("Cannot process '%r'" % obj)
+
+    return obj
+
 def parseFuncutter(data: str) -> Versions:
     versionName:       str|None   = None
     versionProperties: Properties = {}
@@ -30,10 +45,12 @@ def parseFuncutter(data: str) -> Versions:
 
         assert versionName != None
 
+        placeholders = {"@name": versionName}
+
         versions.append(ver := Version(
             name       = versionName,
-            properties = versionProperties.copy(),
-            extensions = versionExtensions.copy(),
+            properties = process(versionProperties.copy(), placeholders),
+            extensions = process(versionExtensions.copy(), placeholders),
             abstract   = versionAbstract
         ))
 
@@ -48,6 +65,9 @@ def parseFuncutter(data: str) -> Versions:
             addonExtensions.extend(versionProperties)
             addonExtensions.insert(0, versionName)
             addonProperties.update(versionProperties)
+
+            addonProperties = process(addonProperties, placeholders)
+            addonExtensions = process(addonExtensions, placeholders)
 
             versions.append(ver := Version(
                 name       = addonName,
