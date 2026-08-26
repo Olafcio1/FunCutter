@@ -43,7 +43,7 @@ Alternative to Stonecutter. Almost no setup.
 
   Note that it does **not** dump:
   - formatted references,
-  - inherits for non-abstract versions,
+  - property inherits for non-abstract versions,
   - arguments.
 
 ## 🕍 Syntax
