@@ -171,9 +171,11 @@ def parseFuncutter(data: str) -> Versions:
         elif line.startswith("//"):
             # Comment
             pass
+        elif not line.strip():
+            pass
         elif versionName == None:
             raise Exception("Cannot put properties out of version scope")
-        elif line.strip() != "":
+        else:
             key, _, value = line.partition("=")
             versionProperties[key] = value
 
