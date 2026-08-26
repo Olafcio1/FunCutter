@@ -35,6 +35,16 @@ Alternative to Stonecutter. Almost no setup.
   If you want to change a thing during the process, you can amend commit it.<br/>
   It will add the change to the funcutter temporary commit, which will stay for the next versions during the process, and end up in your unstaged working root after all versions are processed.
 
+- To understand what your project does for each version, use `funcutter !dump`.<br/>
+  For each of the versions, it:
+  - prints the inherits,
+  - prints the properties,
+  - prints whether it is abstract or not.
+
+  Note that it does **not** dump:
+  - formatted references,
+  - inherits for non-abstract versions.
+
 ## 🕍 Syntax
 FunCutter supports multiple types of files:
 - **File Patch (.fp-\*)**<br/>
