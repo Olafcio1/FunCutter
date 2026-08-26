@@ -43,7 +43,8 @@ Alternative to Stonecutter. Almost no setup.
 
   Note that it does **not** dump:
   - formatted references,
-  - inherits for non-abstract versions.
+  - inherits for non-abstract versions,
+  - arguments.
 
 ## 🕍 Syntax
 FunCutter supports multiple types of files:
