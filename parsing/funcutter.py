@@ -15,6 +15,7 @@ def parseFuncutter(data: str) -> Versions:
     versionName:       str|None   = None
     versionProperties: Properties = {}
     versionExtensions: list[str]  = []
+    versionAddons:     list[str]  = []
     versionAbstract:   bool       = False
 
     versions: Versions = []
@@ -24,6 +25,7 @@ def parseFuncutter(data: str) -> Versions:
         nonlocal versionName, \
                  versionProperties, \
                  versionAbstract, \
+                 versionAddons, \
                  versions, dictversions
 
         assert versionName != None
@@ -37,8 +39,28 @@ def parseFuncutter(data: str) -> Versions:
 
         dictversions[versionName] = ver
 
+        for addon in versionAddons:
+            addonName = addon + "-" + versionName
+
+            addonProperties = dictversions[addon]['properties'].copy()
+            addonExtensions = dictversions[addon]['extensions'].copy()
+
+            addonExtensions.extend(versionProperties)
+            addonExtensions.insert(0, versionName)
+            addonProperties.update(versionProperties)
+
+            versions.append(ver := Version(
+                name       = addonName,
+                properties = addonProperties,
+                extensions = addonExtensions,
+                abstract   = versionAbstract
+            ))
+
+            dictversions[addonName] = ver
+
         versionProperties.clear()
         versionExtensions.clear()
+        versionAddons.clear()
         versionName = None
         versionAbstract = False
 
@@ -85,6 +107,14 @@ def parseFuncutter(data: str) -> Versions:
             name = line[1:].strip()
 
             versionExtensions.append(name)
+        elif line.startswith("<-"):
+            # Addon
+            if versionName == None:
+                raise Exception("Cannot put addon out of version scope")
+
+            name = line[2:].strip()
+
+            versionAddons.append(name)
         elif line.startswith("//"):
             # Comment
             pass
