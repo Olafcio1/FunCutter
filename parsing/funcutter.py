@@ -24,7 +24,27 @@ def process(obj, placeholders):
     else:
         raise Exception("Cannot process '%r'" % obj)
 
-    return obj
+def provide(obj, placeholders, *, master: bool = True):
+    if master and not placeholders:
+        return
+
+    if isinstance(obj, list):
+        for i, v in enumerate(obj):
+            obj[i] = provide(v, placeholders, master=False)
+    elif isinstance(obj, dict):
+        for k in obj:
+            obj[k] = provide(obj[k], placeholders, master=False)
+    elif isinstance(obj, str):
+        while "{}" in obj:
+            if not placeholders:
+                raise Exception("Not enough arguments")
+
+            obj = obj.replace("{}", placeholders.pop(0), 1)
+    else:
+        raise Exception("Cannot process '%r'" % obj)
+
+    if placeholders and master:
+        raise Exception("Too many arguments")
 
 def parseFuncutter(data: str) -> Versions:
     versionName:       str|None   = None
@@ -56,7 +76,7 @@ def parseFuncutter(data: str) -> Versions:
 
         dictversions[versionName] = ver
 
-        for addon in versionAddons:
+        for (addon, addonArgs) in versionAddons:
             addonName = addon + "-" + versionName
 
             addonProperties = dictversions[addon]['properties'].copy()
@@ -66,8 +86,11 @@ def parseFuncutter(data: str) -> Versions:
             addonExtensions.insert(0, versionName)
             addonProperties.update(versionProperties)
 
-            addonProperties = process(addonProperties, placeholders)
-            addonExtensions = process(addonExtensions, placeholders)
+            process(addonProperties, placeholders)
+            process(addonExtensions, placeholders)
+
+            provide(addonProperties, addonArgs)
+            provide(addonExtensions, addonArgs)
 
             versions.append(ver := Version(
                 name       = addonName,
@@ -132,9 +155,19 @@ def parseFuncutter(data: str) -> Versions:
             if versionName == None:
                 raise Exception("Cannot put addon out of version scope")
 
-            name = line[2:].strip()
+            name = line[2:]
+            args = []
 
-            versionAddons.append(name)
+            while "(" in name:
+                name, _, value = name.partition("(")
+                value, _, rest = value.partition(")")
+
+                name += rest
+                args.append(value)
+
+            name = name.strip()
+
+            versionAddons.append((name, args))
         elif line.startswith("//"):
             # Comment
             pass
