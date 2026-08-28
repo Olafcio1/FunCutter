@@ -51,8 +51,18 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLat
             print("[Funcutter] [Patches] > Deleting " + pathN)
 
             realP = physP + sub + "/" + dotSplit[0] + "." + dotSplit[2][3:]
+            optional = False
 
-            os.unlink(realP)
+            with open(pathN, "r", encoding='utf-8', errors='ignore') as infofile:
+                if infofile.read().strip() == '[optional]':
+                    optional = True
+
+            try:
+                os.unlink(realP)
+            except:
+                if not optional:
+                    raise
+
             recovery.append(runner(["git", "restore", realP]))
         else:
             print("[Funcutter] [Patches] > Creating " + pathN)
