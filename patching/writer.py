@@ -37,7 +37,7 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLat
             else:
                 os.mkdir(physN)
                 print("[Funcutter] [Patches] > Creating directory " + pathN)
-                recoveryLate.append(lambda: os.rmdir(physN))
+                recoveryLate.append(rmdir_proxy(physN))
 
         if os.path.isdir(pathN):
             writePatches(versionName, recovery, sub=subN, recoveryLate=recoveryLate)
@@ -65,6 +65,9 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLat
 
     if newLate:
         recovery.extend(recoveryLate)
+
+def rmdir_proxy(path: str):
+    return lambda: os.rmdir(path)
 
 def runner(args: list[str]):
     return lambda: subprocess.run(args)
