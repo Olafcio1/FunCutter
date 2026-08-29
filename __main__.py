@@ -144,7 +144,7 @@ def buildAll() -> None:
     ###=================###
     properties, propRaw = readProperties()
 
-    jarName = properties['archives_base_name']
+    jarName = properties.get('archives_base_name')
 
     ###=======###
     ### STASH ###
@@ -203,7 +203,9 @@ def buildAll() -> None:
           pendingReset = True
 
           vproperties = {**properties, **version['properties']}
-          vproperties['archives_base_name'] = jarName + "+" + version['name']
+
+          if jarName != None:
+              vproperties['archives_base_name'] = jarName + "+" + version['name']
 
           writeProperties(vproperties)
 
