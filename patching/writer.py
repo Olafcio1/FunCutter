@@ -6,6 +6,14 @@ from .kind.script_patch import scriptPatch
 
 __all__ = ("writePatches",)
 
+def noext(fn):
+    left, middle, ext = fn.rpartition(".")
+
+    if ext.startswith(("fp-", "fd-", "fs-")):
+        return left + middle + ext[3:]
+
+    return fn
+
 def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLate: list|None = None) -> None:
     if recoveryLate is None:
         recoveryLate = []
@@ -22,14 +30,50 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLat
 
         return
 
+    srcs = os.listdir("src")
+
     for fn in files:
         fnSlashed = "/" + fn
 
         subN = sub + fnSlashed
         pathN = path + fnSlashed
 
-        physP = "src/main"
-        physN = physP + subN
+        order = []
+        subNS = subN.split("/")
+
+        for srcName in srcs:
+            physP = "src/" + srcName
+            physN = physP + subN
+
+            if os.path.exists(noext(physN)):
+                break
+
+            for i in range(1, len(subNS)):
+                if os.path.exists(physP + "/".join(subNS[:-i])):
+                   order.append((i, physP, physN))
+                   break
+        else:
+            if len(order) > 2:
+                last = order[0][0]
+                same = True
+
+                for key in order[1:]:
+                    if key[0] != last:
+                       same = False
+                       break
+
+                if same:
+                   #print('clearing ' + repr(order))
+                   order.clear()
+
+            if order:
+                order = sorted(order, key=lambda tuple: tuple[0])
+                _, physP, physN = order[0]
+                #print("using " + physN + " (" + str(_) + ") <- " + repr(order))
+            else:
+                #print("at " + physN + " <- " + repr(order))
+                physP = "src/main"
+                physN = physP + subN
 
         if os.path.isdir(pathN) != os.path.isdir(physN):
             if os.path.exists(physN):
