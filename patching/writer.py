@@ -31,6 +31,13 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLat
         return
 
     srcs = os.listdir("src")
+    if os.path.isfile(skipSources := ("versions/" + versionName + "/.skip-sources")):
+        with open(skipSources, "r", encoding='utf-8') as f:
+            data = f.read().splitlines()
+
+        for line in data:
+            if line and not line.startswith(";"):
+                srcs.remove(line)
 
     for fn in files:
         fnSlashed = "/" + fn
