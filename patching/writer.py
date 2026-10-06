@@ -39,48 +39,63 @@ def writePatches(versionName: str, recovery: list, *, sub: str = "", recoveryLat
             if line and not line.startswith(";"):
                 srcs.remove(line)
 
+    overrides = {}
+
+    if os.path.isfile(overridesF := ("versions/" + versionName + "/.overrides")):
+        with open(overridesF, "r", encoding='utf-8') as f:
+            data = f.read().splitlines()
+
+        for line in data:
+            if line and not line.startswith(";"):
+                pkg, _, modu = line.partition(" == ")
+                overrides["/" + pkg] = modu
+
     for fn in files:
         fnSlashed = "/" + fn
 
         subN = sub + fnSlashed
         pathN = path + fnSlashed
 
-        order = []
-        subNS = subN.split("/")
-
-        for srcName in srcs:
-            physP = "src/" + srcName
+        if subN in overrides:
+            physP = "src/" + overrides[subN]
             physN = physP + subN
-
-            if os.path.exists(noext(physN)):
-                break
-
-            for i in range(1, len(subNS)):
-                if os.path.exists(physP + "/".join(subNS[:-i])):
-                   order.append((i, physP, physN))
-                   break
         else:
-            if len(order) > 2:
-                last = order[0][0]
-                same = True
+            order = []
+            subNS = subN.split("/")
 
-                for key in order[1:]:
-                    if key[0] != last:
-                       same = False
-                       break
-
-                if same:
-                   #print('clearing ' + repr(order))
-                   order.clear()
-
-            if order:
-                order = sorted(order, key=lambda tuple: tuple[0])
-                _, physP, physN = order[0]
-                #print("using " + physN + " (" + str(_) + ") <- " + repr(order))
-            else:
-                #print("at " + physN + " <- " + repr(order))
-                physP = "src/main"
+            for srcName in srcs:
+                physP = "src/" + srcName
                 physN = physP + subN
+
+                if os.path.exists(noext(physN)):
+                    break
+
+                for i in range(1, len(subNS)):
+                    if os.path.exists(physP + "/".join(subNS[:-i])):
+                       order.append((i, physP, physN))
+                       break
+            else:
+                if len(order) > 2:
+                    last = order[0][0]
+                    same = True
+
+                    for key in order[1:]:
+                        if key[0] != last:
+                           same = False
+                           break
+
+                    if same:
+                       #print('clearing ' + repr(order))
+                       order.clear()
+
+                if order:
+                    order = sorted(order, key=lambda tuple: tuple[0])
+                    _, physP, physN = order[0]
+                    #print("using " + physN + " (" + str(_) + ") <- " + repr(order))
+                else:
+                    #print("at " + physN + " <- " + repr(order))
+                    physP = "src/main"
+                    physN = physP + subN
 
         if os.path.isdir(pathN) != os.path.isdir(physN):
             if os.path.exists(physN):
